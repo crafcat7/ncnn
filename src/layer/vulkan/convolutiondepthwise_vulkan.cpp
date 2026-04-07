@@ -17,6 +17,7 @@ ConvolutionDepthWise_vulkan::ConvolutionDepthWise_vulkan()
 
     pipeline_convolutiondepthwise = 0;
     pipeline_convolutiondepthwise_pack4 = 0;
+    pipeline_convolutiondepthwise_pack4_3x3s1d1 = 0;
 
     pipeline_convolutiondepthwise_group = 0;
     pipeline_convolutiondepthwise_group_pack4 = 0;
@@ -174,6 +175,13 @@ int ConvolutionDepthWise_vulkan::create_pipeline(const Option& opt)
             pipeline_convolutiondepthwise_pack4 = new Pipeline(vkdev);
             pipeline_convolutiondepthwise_pack4->set_optimal_local_size_xyz(local_size_xyz);
             pipeline_convolutiondepthwise_pack4->create(LayerShaderType::convolutiondepthwise_pack4, opt, specializations);
+
+            if (kernel_w == 3 && kernel_h == 3 && stride_w == 1 && stride_h == 1 && dilation_w == 1 && dilation_h == 1)
+            {
+                pipeline_convolutiondepthwise_pack4_3x3s1d1 = new Pipeline(vkdev);
+                pipeline_convolutiondepthwise_pack4_3x3s1d1->set_local_size_xyz(8, 8, 1);
+                pipeline_convolutiondepthwise_pack4_3x3s1d1->create(LayerShaderType::convolutiondepthwise_pack4_3x3s1d1, opt, specializations);
+            }
         }
 
         if (opt.lightmode)
@@ -297,6 +305,9 @@ int ConvolutionDepthWise_vulkan::destroy_pipeline(const Option& opt)
 
     delete pipeline_convolutiondepthwise_pack4;
     pipeline_convolutiondepthwise_pack4 = 0;
+
+    delete pipeline_convolutiondepthwise_pack4_3x3s1d1;
+    pipeline_convolutiondepthwise_pack4_3x3s1d1 = 0;
 
     delete pipeline_convolutiondepthwise_group;
     pipeline_convolutiondepthwise_group = 0;
@@ -456,7 +467,22 @@ int ConvolutionDepthWise_vulkan::forward(const VkMat& bottom_blob, VkMat& top_bl
         constants[8].i = top_blob.c;
         constants[9].i = top_blob.cstep;
 
-        const Pipeline* pipeline = elempack == 4 ? pipeline_convolutiondepthwise_pack4 : pipeline_convolutiondepthwise;
+        const Pipeline* pipeline = 0;
+        if (elempack == 4)
+        {
+            if (kernel_w == 3 && kernel_h == 3 && stride_w == 1 && stride_h == 1 && dilation_w == 1 && dilation_h == 1)
+            {
+                pipeline = opt.use_shader_local_memory && pipeline_convolutiondepthwise_pack4_3x3s1d1 ? pipeline_convolutiondepthwise_pack4_3x3s1d1 : pipeline_convolutiondepthwise_pack4;
+            }
+            else
+            {
+                pipeline = pipeline_convolutiondepthwise_pack4;
+            }
+        }
+        else
+        {
+            pipeline = pipeline_convolutiondepthwise;
+        }
 
         cmd.record_pipeline(pipeline, bindings, constants, top_blob);
 

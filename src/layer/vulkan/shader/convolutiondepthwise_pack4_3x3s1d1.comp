@@ -1,0 +1,133 @@
+// Copyright 2026 Tencent
+// SPDX-License-Identifier: BSD-3-Clause
+
+#version 450
+
+#extension GL_GOOGLE_include_directive : enable
+#include "vulkan_activation.comp"
+
+layout(constant_id = 0) const int kernel_w = 1;
+layout(constant_id = 1) const int kernel_h = 1;
+layout(constant_id = 2) const int dilation_w = 1;
+layout(constant_id = 3) const int dilation_h = 1;
+layout(constant_id = 4) const int stride_w = 1;
+layout(constant_id = 5) const int stride_h = 1;
+layout(constant_id = 6) const int bias_term = 0;
+layout(constant_id = 7) const int group = 1;
+layout(constant_id = 8) const int activation_type = 0;
+layout(constant_id = 9) const float activation_param_0 = 0;
+layout(constant_id = 10) const float activation_param_1 = 0;
+
+#define shape_constant_id_offset 11
+layout(constant_id = shape_constant_id_offset + 0) const int dims = 0;
+layout(constant_id = shape_constant_id_offset + 1) const int w = 0;
+layout(constant_id = shape_constant_id_offset + 2) const int h = 0;
+layout(constant_id = shape_constant_id_offset + 3) const int c = 0;
+layout(constant_id = shape_constant_id_offset + 4) const int cstep = 0;
+
+layout(constant_id = shape_constant_id_offset + 5) const int outdims = 0;
+layout(constant_id = shape_constant_id_offset + 6) const int outw = 0;
+layout(constant_id = shape_constant_id_offset + 7) const int outh = 0;
+layout(constant_id = shape_constant_id_offset + 8) const int outc = 0;
+layout(constant_id = shape_constant_id_offset + 9) const int outcstep = 0;
+
+layout(binding = 0) readonly buffer bottom_blob { sfpvec4 bottom_blob_data[]; };
+layout(binding = 1) writeonly buffer top_blob { sfpvec4 top_blob_data[]; };
+layout(binding = 2) readonly buffer weight_blob { sfpvec4 weight_data[]; };
+layout(binding = 3) readonly buffer bias_blob { sfpvec4 bias_data[]; };
+
+layout(push_constant) uniform parameter
+{
+    int dims;
+    int w;
+    int h;
+    int c;
+    int cstep;
+
+    int outdims;
+    int outw;
+    int outh;
+    int outc;
+    int outcstep;
+} p;
+
+shared lfpvec4 tile[10][10];
+
+void main()
+{
+    int gx = int(gl_GlobalInvocationID.x);
+    int gy = int(gl_GlobalInvocationID.y);
+    int gz = int(gl_GlobalInvocationID.z);
+
+    if (gz >= psc(outc))
+        return;
+
+    const int lx = int(gl_LocalInvocationID.x);
+    const int ly = int(gl_LocalInvocationID.y);
+    const int bx = int(gl_WorkGroupID.x) * 8;
+    const int by = int(gl_WorkGroupID.y) * 8;
+
+    const int channel_offset = gz * psc(cstep);
+
+    for (int yy = ly; yy < 10; yy += 8)
+    {
+        for (int xx = lx; xx < 10; xx += 8)
+        {
+            int sx = bx + xx;
+            int sy = by + yy;
+
+            afpvec4 v = afpvec4(0.f);
+            if (sx < psc(w) && sy < psc(h))
+            {
+                int v_offset = channel_offset + sy * psc(w) + sx;
+                v = buffer_ld4(bottom_blob_data, v_offset);
+            }
+
+            tile[yy][xx] = afp2lfpvec4(v);
+        }
+    }
+
+    barrier();
+
+    if (gx >= psc(outw) || gy >= psc(outh))
+        return;
+
+    afpvec4 sum = bias_term == 1 ? buffer_ld4(bias_data, gz) : afpvec4(0.f);
+
+    int w_offset = gz * 9;
+
+    afpvec4 k0 = buffer_ld4(weight_data, w_offset);
+    afpvec4 k1 = buffer_ld4(weight_data, w_offset + 1);
+    afpvec4 k2 = buffer_ld4(weight_data, w_offset + 2);
+    afpvec4 k3 = buffer_ld4(weight_data, w_offset + 3);
+    afpvec4 k4 = buffer_ld4(weight_data, w_offset + 4);
+    afpvec4 k5 = buffer_ld4(weight_data, w_offset + 5);
+    afpvec4 k6 = buffer_ld4(weight_data, w_offset + 6);
+    afpvec4 k7 = buffer_ld4(weight_data, w_offset + 7);
+    afpvec4 k8 = buffer_ld4(weight_data, w_offset + 8);
+
+    afpvec4 v0 = lfp2afpvec4(tile[ly + 0][lx + 0]);
+    afpvec4 v1 = lfp2afpvec4(tile[ly + 0][lx + 1]);
+    afpvec4 v2 = lfp2afpvec4(tile[ly + 0][lx + 2]);
+    afpvec4 v3 = lfp2afpvec4(tile[ly + 1][lx + 0]);
+    afpvec4 v4 = lfp2afpvec4(tile[ly + 1][lx + 1]);
+    afpvec4 v5 = lfp2afpvec4(tile[ly + 1][lx + 2]);
+    afpvec4 v6 = lfp2afpvec4(tile[ly + 2][lx + 0]);
+    afpvec4 v7 = lfp2afpvec4(tile[ly + 2][lx + 1]);
+    afpvec4 v8 = lfp2afpvec4(tile[ly + 2][lx + 2]);
+
+    sum += v0 * k0;
+    sum += v1 * k1;
+    sum += v2 * k2;
+    sum += v3 * k3;
+    sum += v4 * k4;
+    sum += v5 * k5;
+    sum += v6 * k6;
+    sum += v7 * k7;
+    sum += v8 * k8;
+
+    sum = activation_afpvec4(sum, activation_type, activation_param_0, activation_param_1);
+
+    const int gi = gz * psc(outcstep) + gy * psc(outw) + gx;
+    buffer_st4(top_blob_data, gi, sum);
+}

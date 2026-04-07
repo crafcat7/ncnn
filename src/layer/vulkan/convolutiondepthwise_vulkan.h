@@ -34,6 +34,7 @@ public:
 
     Pipeline* pipeline_convolutiondepthwise;
     Pipeline* pipeline_convolutiondepthwise_pack4;
+    Pipeline* pipeline_convolutiondepthwise_pack4_3x3s1d1;
 
     Pipeline* pipeline_convolutiondepthwise_group;
     Pipeline* pipeline_convolutiondepthwise_group_pack4;
