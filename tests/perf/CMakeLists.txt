@@ -26,6 +26,10 @@ macro(ncnn_add_layer_perf class)
     endif()
 endmacro()
 
+if(NCNN_VULKAN)
+    ncnn_add_perf(convolutiondepthwise_vulkan_slidingwindow)
+endif()
+
 ncnn_add_layer_perf(ReLU)
 ncnn_add_layer_perf(Convolution)
 ncnn_add_layer_perf(ConvolutionDepthWise)
