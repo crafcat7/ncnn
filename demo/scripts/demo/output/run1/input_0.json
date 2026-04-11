@@ -1,0 +1,13 @@
+{
+  "bin_file": "demo/output/run1/input_0.bin",
+  "name": "data",
+  "w": 224,
+  "h": 224,
+  "c": 3,
+  "dims": 3,
+  "elemsize": 4,
+  "elempack": 1,
+  "total_elements": 150528,
+  "shape": [3, 224, 224],
+  "sample_values": [0.010000, 0.010000, 0.010000, 0.010000, 0.010000, 0.010000, 0.010000, 0.010000, ...]
+}

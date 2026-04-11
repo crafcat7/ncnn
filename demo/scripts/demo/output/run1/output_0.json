@@ -1,0 +1,13 @@
+{
+  "bin_file": "demo/output/run1/output_0.bin",
+  "name": "output",
+  "w": 1000,
+  "h": 1,
+  "c": 1,
+  "dims": 1,
+  "elemsize": 4,
+  "elempack": 1,
+  "total_elements": 1000,
+  "shape": [1000],
+  "sample_values": [0.001000, 0.001000, 0.001000, 0.001000, 0.001000, 0.001000, 0.001000, 0.001000, ...]
+}

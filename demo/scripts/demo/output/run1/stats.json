@@ -1,0 +1,13 @@
+{
+  "model": "shufflenet",
+  "backend": "cpu",
+  "test_loops": 20,
+  "latency_ms": {"min": 5.8862, "max": 7.4341, "avg": 6.1479, "p50": 5.9905, "p90": 6.5245, "p99": 7.2638},
+  "peak_memory_bytes": 4348964,
+  "inputs": [
+    {"name": "data", "shape": [3, 224, 224], "total_elements": 150528}
+  ],
+  "outputs": [
+    {"name": "output", "shape": [1000], "total_elements": 1000}
+  ]
+}

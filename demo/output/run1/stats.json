@@ -1,0 +1,13 @@
+{
+  "model": "squeezenet",
+  "backend": "cpu",
+  "test_loops": 20,
+  "latency_ms": {"min": 11.9600, "max": 12.7810, "avg": 12.4016, "p50": 12.4861, "p90": 12.6920, "p99": 12.7643},
+  "peak_memory_bytes": 6548920,
+  "inputs": [
+    {"name": "data", "shape": [3, 227, 227], "total_elements": 154596}
+  ],
+  "outputs": [
+    {"name": "output", "shape": [1000], "total_elements": 1000}
+  ]
+}
