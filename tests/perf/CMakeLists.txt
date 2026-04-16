@@ -43,3 +43,7 @@ if(WITH_LAYER_sdpa)
     ncnn_add_perf(sdpa_decode)
     ncnn_add_perf(sdpa_prefill)
 endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|aarch64)")
+    ncnn_add_perf(swish_compare)
+endif()
