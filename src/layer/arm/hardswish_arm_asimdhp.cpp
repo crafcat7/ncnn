@@ -95,8 +95,17 @@ int HardSwish_arm::forward_inplace_fp16sa(Mat& bottom_top_blob, const Option& op
 
         float16x8_t _zero = vdupq_n_f16((__fp16)0.f);
         float16x8_t _one = vdupq_n_f16((__fp16)1.f);
+#if defined(_MSC_VER) && !defined(__clang__)
+        float16x4_t _zero0 = vcvt_f16_f32(vdupq_n_f32(0.f));
+        float16x4_t _one0 = vcvt_f16_f32(vdupq_n_f32(1.f));
+        float16x4_t _alpha0 = vcvt_f16_f32(vdupq_n_f32(alpha));
+        float16x4_t _beta0 = vcvt_f16_f32(vdupq_n_f32(beta));
+        float16x8_t _alpha = vcombine_f16(_alpha0, _alpha0);
+        float16x8_t _beta = vcombine_f16(_beta0, _beta0);
+#else
         float16x8_t _alpha = vdupq_n_f16(alpha_fp16);
         float16x8_t _beta = vdupq_n_f16(beta_fp16);
+#endif
 
         int i = 0;
         for (; i + 31 < size; i += 32)
@@ -190,9 +199,15 @@ int HardSwish_arm::forward_inplace_fp16sa(Mat& bottom_top_blob, const Option& op
         for (; i + 3 < size; i += 4)
         {
             float16x4_t _p = vld1_f16(ptr);
+#if defined(_MSC_VER) && !defined(__clang__)
+            float16x4_t _ans = vfma_f16(_beta0, _p, _alpha0);
+            _ans = vmax_f16(_ans, _zero0);
+            _ans = vmin_f16(_ans, _one0);
+#else
             float16x4_t _ans = vfma_f16(vget_low_f16(_beta), _p, vget_low_f16(_alpha));
             _ans = vmax_f16(_ans, vget_low_f16(_zero));
             _ans = vmin_f16(_ans, vget_low_f16(_one));
+#endif
             _p = vmul_f16(_ans, _p);
             vst1_f16(ptr, _p);
             ptr += 4;
