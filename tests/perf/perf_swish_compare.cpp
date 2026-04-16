@@ -20,8 +20,8 @@
 #endif
 #endif
 
-#define PERF_WARMUP_COUNT 10
-#define PERF_RUN_COUNT 20
+#define PERF_WARMUP_COUNT  10
+#define PERF_RUN_COUNT     20
 #define PERF_TARGET_MIN_MS 5.0
 
 struct PerfResult
