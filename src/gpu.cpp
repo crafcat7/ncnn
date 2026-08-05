@@ -4793,6 +4793,29 @@ uint32_t VulkanDevice::get_heap_budget() const
     return memoryBudgetProperties.heapBudget[buffer_heap_index] / 1024 / 1024;
 }
 
+uint32_t VulkanDevice::get_heap_usage() const
+{
+    const VkPhysicalDeviceMemoryProperties& memory_properties = info.physicalDeviceMemoryProperties();
+
+    uint32_t buffer_memory_type_index = d->dummy_allocator->buffer_memory_type_index;
+    uint32_t buffer_heap_index = memory_properties.memoryTypes[buffer_memory_type_index].heapIndex;
+
+    if (!info.support_VK_EXT_memory_budget())
+        return 0;
+
+    VkPhysicalDeviceMemoryBudgetPropertiesEXT memoryBudgetProperties;
+    memoryBudgetProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
+    memoryBudgetProperties.pNext = 0;
+
+    VkPhysicalDeviceMemoryProperties2KHR memoryProperties;
+    memoryProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR;
+    memoryProperties.pNext = &memoryBudgetProperties;
+
+    vkGetPhysicalDeviceMemoryProperties2KHR(info.physicalDevice(), &memoryProperties);
+
+    return memoryBudgetProperties.heapUsage[buffer_heap_index] / 1024 / 1024;
+}
+
 void VulkanDevice::convert_packing(const VkMat& src, VkMat& dst, int dst_elempack, VkCompute& cmd, const Option& opt) const
 {
     convert_packing(src, dst, dst_elempack, 0, cmd, opt);

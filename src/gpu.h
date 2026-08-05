@@ -486,6 +486,10 @@ public:
     // current gpu heap memory budget in MB
     uint32_t get_heap_budget() const;
 
+    // current gpu heap memory usage in MB. Returns zero when
+    // VK_EXT_memory_budget is unavailable.
+    uint32_t get_heap_usage() const;
+
     // utility operator
     void convert_packing(const VkMat& src, VkMat& dst, int dst_elempack, VkCompute& cmd, const Option& opt) const;
     // cast_type_to   0=auto(same as src)  1=fp32  2=fp16  3=int32  4=int8  5=bf16
