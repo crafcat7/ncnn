@@ -21,25 +21,25 @@ static bool vulkan_compute_optimization_enabled(uint32_t optimization_flags, uin
 static bool skip_redundant_pipeline_binds(uint32_t optimization_flags)
 {
     return vulkan_compute_optimization_enabled(optimization_flags,
-        VkComputeOptimizationPipelineBindElision);
+            VkComputeOptimizationPipelineBindElision);
 }
 
 static bool readonly_buffer_bindings_enabled(uint32_t optimization_flags)
 {
     return vulkan_compute_optimization_enabled(optimization_flags,
-        VkComputeOptimizationReadonlyBindings);
+            VkComputeOptimizationReadonlyBindings);
 }
 
 static bool batch_buffer_barriers_enabled(uint32_t optimization_flags)
 {
     return vulkan_compute_optimization_enabled(optimization_flags,
-        VkComputeOptimizationBatchBufferBarriers);
+            VkComputeOptimizationBatchBufferBarriers);
 }
 
 static bool stack_descriptor_payload_enabled(uint32_t optimization_flags)
 {
     return vulkan_compute_optimization_enabled(optimization_flags,
-        VkComputeOptimizationStackDescriptorPayload);
+            VkComputeOptimizationStackDescriptorPayload);
 }
 
 class VkComputePrivate
@@ -218,7 +218,7 @@ public:
     // appended.
     std::deque<VkBufferMemoryBarrier> delayed_buffer_barriers;
     std::deque<VkImageMemoryBarrier> delayed_image_barriers;
-    std::deque<std::vector<VkBufferMemoryBarrier>> delayed_buffer_barrier_batches;
+    std::deque<std::vector<VkBufferMemoryBarrier> > delayed_buffer_barrier_batches;
 
     uint64_t pending_dispatch_total;
     bool submitted;
@@ -405,9 +405,9 @@ VkCompute::VkCompute(const VulkanDevice* _vkdev)
     : VkCompute(
           _vkdev,
           VkComputeOptimizationPipelineBindElision
-              | VkComputeOptimizationReadonlyBindings
-              | VkComputeOptimizationBatchBufferBarriers
-              | VkComputeOptimizationStackDescriptorPayload)
+          | VkComputeOptimizationReadonlyBindings
+          | VkComputeOptimizationBatchBufferBarriers
+          | VkComputeOptimizationStackDescriptorPayload)
 {
 }
 
@@ -1471,14 +1471,14 @@ void VkCompute::record_pipeline_impl(const Pipeline* pipeline, const std::vector
                                   && index < static_cast<int>(readonly_buffer_bindings->size())
                                   && (*readonly_buffer_bindings)[index] != 0;
             const VkAccessFlags desired_access = readonly
-                                                     ? VK_ACCESS_SHADER_READ_BIT
-                                                     : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                                                 ? VK_ACCESS_SHADER_READ_BIT
+                                                 : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             const bool needs_barrier = readonly
-                                           ? binding.data->access_flags != VK_ACCESS_SHADER_READ_BIT
-                                                 || binding.data->stage_flags != VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
-                                           : binding.data->access_flags == VK_ACCESS_SHADER_READ_BIT
-                                                 || binding.data->access_flags & VK_ACCESS_SHADER_WRITE_BIT
-                                                 || binding.data->stage_flags != VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                       ? binding.data->access_flags != VK_ACCESS_SHADER_READ_BIT
+                                       || binding.data->stage_flags != VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+                                       : binding.data->access_flags == VK_ACCESS_SHADER_READ_BIT
+                                       || binding.data->access_flags & VK_ACCESS_SHADER_WRITE_BIT
+                                       || binding.data->stage_flags != VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
             if (!needs_barrier)
                 continue;
 
@@ -1520,8 +1520,8 @@ void VkCompute::record_pipeline_impl(const Pipeline* pipeline, const std::vector
         if (barrier_count != 0)
         {
             const VkBufferMemoryBarrier* barrier_data = overflow_barriers.empty()
-                                                             ? inline_barriers
-                                                             : overflow_barriers.data();
+                    ? inline_barriers
+                    : overflow_barriers.data();
             if (vkdev->info.support_VK_KHR_push_descriptor())
             {
                 vkCmdPipelineBarrier(
@@ -2528,8 +2528,8 @@ int VkCompute::get_query_pool_results(uint32_t first_query, uint32_t query_count
 void VkCompute::barrier_readwrite(const VkMat& binding)
 {
     if (binding.data->access_flags == VK_ACCESS_SHADER_READ_BIT
-        || binding.data->access_flags & VK_ACCESS_SHADER_WRITE_BIT
-        || binding.data->stage_flags != VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT)
+            || binding.data->access_flags & VK_ACCESS_SHADER_WRITE_BIT
+            || binding.data->stage_flags != VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT)
     {
         // barrier device any @ compute/null to shader-readwrite @ compute
         VkBufferMemoryBarrier barrier;
